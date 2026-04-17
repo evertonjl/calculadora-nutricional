@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriCalc - Calculadora Nutricional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #2D6A4F;
+            --secondary: #40916C;
+            --accent: #95D5B2;
+            --light: #D8F3DC;
+            --bg: #F8F9FA;
+            --card: #FFFFFF;
+            --text: #212529;
+            --text-light: #6C757D;
+            --danger: #DC3545;
+            --warning: #FFC107;
+            --success: #28A745;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.5rem 2rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(45, 106, 79, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .header p { opacity: 0.9; margin-top: 0.5rem; }
+        
+        .container { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
+        
+        .tabs {
+            display: flex;
+            gap: 5px;
+            background: var(--card);
+            border-radius: 12px;
+            padding: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 12px 14px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .tab.active { background: var(--primary); color: white; }
+        .tab:hover:not(.active) { background: var(--light); }
+        
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .form-group { margin-bottom: 1rem; }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #E9ECEF;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            background: var(--card);
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--secondary); transform: translateY(-2px); }
+        .btn-secondary { background: var(--light); color: var(--primary); }
+        .btn-success { background: var(--success); color: white; }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+        }
+        
+        .result-card {
+            background: var(--light);
+            padding: 1.25rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .result-card.highlight {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        .result-value { font-size: 1.75rem; font-weight: 700; margin: 0.5rem 0; }
+        .result-label { font-size: 0.85rem; opacity: 0.8; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #E9ECEF; }
+        th { background: var(--light); font-weight: 600; color: var(--primary); }
+        
+        .input-group { display: flex; gap: 8px; align-items: center; }
+        .macro-input { width: 70px !important; text-align: center !important; }
+        
+        .meal-card {
+            background: var(--light);
+            padding: 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .meal-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .meal-calories { font-size: 0.9rem; color: var(--text-light); }
+        
+        .food-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            font-size: 0.9rem;
+        }
+        
+        .substitutes {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed rgba(0,0,0,0.15);
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        
+        .info-box {
+            background: #E7F5FF;
+            border-left: 4px solid #007BFF;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .warning-box {
+            background: #FFF8E6;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .success-box {
+            background: #E8F5E9;
+            border-left: 4px solid var(--success);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .hidden { display: none !important; }
+        
+        .actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+        
+        .meal-name-input {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .meal-name-field {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .meal-name-field label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+        }
+        
+        .meal-name-field input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .pdf-actions { display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end; }
+        
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.5rem; }
+            .form-grid { grid-template-columns: 1fr; }
+            .tabs { flex-wrap: nowrap; min-width: 100%; }
+            .tab { padding: 10px 10px; font-size: 0.7rem; }
+            .results-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🥗 NutriCalc</h1>
+        <p>Calculadora Nutricional Personalizada</p>
+    </header>
+    
+    <div class="container">
+        <nav class="tabs">
+            <button class="tab active" data-tab="biometrico">📊 Biométricos</button>
+            <button class="tab" data-tab="preferencias">🍽️ Preferências</button>
+            <button class="tab" data-tab="distribuicao">⚙️ Distribuição</button>
+            <button class="tab" data-tab="resultados">📈 Resultados</button>
+            <button class="tab" data-tab="macros">🥩 Macros</button>
+            <button class="tab" data-tab="refeicoes">🍽️ Nomes Refeições</button>
+            <button class="tab" data-tab="cardapio">📋 Cardápio</button>
+        </nav>
+        
+        <!-- TAB: DADOS BIOMÉTRICOS -->
+        <section id="tab-biometrico" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">📊 Dados Biométricos</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Peso (kg) *</label>
+                        <input type="number" id="weight" step="0.1" min="30" max="200" placeholder="Ex: 70" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Altura (cm) *</label>
+                        <input type="number" id="height" min="100" max="220" placeholder="Ex: 170" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Idade (anos) *</label>
+                        <input type="number" id="age" min="10" max="100" placeholder="Ex: 30" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Sexo</label>
+                        <select id="gender">
+                            <option value="M">Masculino</option>
+                            <option value="F" selected>Feminino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fator de Atividade Física</label>
+                        <select id="activity">
+                            <option value="1.2">Sedentário</option>
+                            <option value="1.375">Levemente ativo</option>
+                            <option value="1.55" selected>Moderadamente ativo</option>
+                            <option value="1.725">Muito ativo</option>
+                            <option value="1.9">Atleta</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Meta de perda de peso (kg/mês)</label>
+                        <input type="number" id="weight_loss" step="0.1" min="0" max="5" value="2">
+                    </div>
+                </div>
+                <div class="info-box">
+                    💡Recomendamos 1-2g de proteína por kg de peso corporal.
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-primary" onclick="goNext('preferencias')">Próximo →</button>
+            </div>
+        </section>
+        
+        <!-- TAB: PREFERÊNCIAS -->
+        <section id="tab-preferencias" class="tab-content hidden">
+            <div class="card">
+                <h2 class="card-title">🍽️ Preferências Alimentares</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Número de refeições (2-10)</label>
+                        <input type="number" id="meal_count" min="2" max="10" value="3" onchange="updateMealNames()">
+                    </div>
+                    <div class="form-group">
+                        <label>Restrições religiosas/éticas</label>
+                        <select id="restrictions">
+                            <option value="">Nenhuma</option>
+                            <option value="vegetariano">Vegetariano</option>
+                            <option value="vegano">Vegano</option>
+                            <option value="kosher">Kosher</option>
+                            <option value="halal">Halal</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Doenças ou condições</label>
+                    <select id="disease">
+                        <option value="">Nenhuma</option>
+                        <option value="diabetes">Diabetes</option>
+                        <option value="hipertensao">Hipertensão</option>
+                        <option value="colesterol">Colesterol alto</option>
+                        <option value="gota">Gota</option>
+                        <option value="renal">Doença renal</option>
+                        <option value="celiaco">Celiaquia</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title">🚫 Restrições Alimentares</h2>
+                <div class="form-group">
+                    <label>Alimentos que NÃO pode comer</label>
+                    <textarea id="dislikes" placeholder="Ex: feijão, ovo, leite, bacon"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Alimentos Obrigatórios</label>
+                    <textarea id="required_foods" placeholder="Ex: arroz, frango, salada"></textarea>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="goNext('biometrico')">← Voltar</button>
+                <button class="btn btn-primary" onclick="goNext('distribuicao')">Próximo →</button>
+            </div>
+        </section>
+        
+        <!-- TAB: DISTRIBUIÇÃO -->
+        <section id="tab-distribuicao" class="tab-content hidden">
+            <div class="card">
+                <h2 class="card-title">⚙️ Distribuição de Calorias</h2>
+                <p style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 1rem;">
+                    Defina quantos % das calorias totais serão para almoço e janta.
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>% para Almoço + Janta</label>
+                        <input type="number" id="main_meals_pct" value="50" min="10" max="90">
+                    </div>
+                </div>
+                
+                <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #E9ECEF;">
+                
+                <p style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 1rem;">
+                    Das calorieas de alvo+janta:
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>% para Almoço</label>
+                        <input type="number" id="lunch_pct" value="45" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>% para Janta</label>
+                        <input type="number" id="dinner_pct" value="55" min="0" max="100">
+                    </div>
+                </div>
+                
+                <div id="dist-warning" class="warning-box hidden">
+                    ⚠️ Almoço + Janta devem somar 100%. Atual: <span id="main-total">0</span>%
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="goNext('preferencias')">← Voltar</button>
+                <button class="btn btn-primary" onclick="calculate()">Calcular →</button>
+            </div>
+        </section>
+        
+        <!-- TAB: RESULTADOS -->
+        <section id="tab-resultados" class="tab-content hidden">
+            <div class="card">
+                <h2 class="card-title">📈 Resultados dos Cálculos</h2>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <div class="result-label">Taxa de Metabolismo Basal</div>
+                        <div class="result-value" id="tmb-result">--</div>
+                        <div class="result-label">kcal/dia</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Gasto Energético Total</div>
+                        <div class="result-value" id="get-result">--</div>
+                        <div class="result-label">kcal/dia</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-label">Déficit Diário</div>
+                        <div class="result-value" id="deficit-result">--</div>
+                        <div class="result-label">kcal/dia</div>
+                    </div>
+                    <div class="result-card highlight">
+                        <div class="result-label">Calorias Diárias</div>
+                        <div class="result-value" id="recommended-result">--</div>
+                        <div class="result-label">para atingir meta</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title">🎯 Meta de Perda de Peso</h2>
+                <div class="result-card highlight" style="max-width: 300px;">
+                    <div class="result-label">Peso a perder no mês</div>
+                    <div class="result-value" id="weight-loss-result">--</div>
+                    <div class="result-label">kg/mês</div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="goNext('distribuicao')">← Voltar</button>
+                <button class="btn btn-primary" onclick="goNext('macros')">Próximo →</button>
+            </div>
+        </section>
+        
+        <!-- TAB: MACRONUTRIENTES -->
+        <section id="tab-macros" class="tab-content hidden">
+            <div class="card">
+                <h2 class="card-title">🥩 Distribuição de Macronutrientes</h2>
+                <div class="info-box">
+                    💡 A proteína recomendada é 1-2g por kg de peso corporal. Ajuste os percentuais abaixo.
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Macronutriente</th>
+                                <th>Percentual</th>
+                                <th>Gramas</th>
+                                <th>Calorias</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>🥩 Proteína</strong> (4 kcal/g)</td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" id="protein-pct" class="macro-input" value="30" min="0" max="100" onchange="recalculateMacros()">
+                                        <span>%</span>
+                                    </div>
+                                </td>
+                                <td id="protein-grams">--</td>
+                                <td id="protein-cal">--</td>
+                            </tr>
+                            <tr>
+                                <td><strong>🍚 Carboidrato</strong> (4 kcal/g)</td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" id="carb-pct" class="macro-input" value="40" min="0" max="100" onchange="recalculateMacros()">
+                                        <span>%</span>
+                                    </div>
+                                </td>
+                                <td id="carb-grams">--</td>
+                                <td id="carb-cal">--</td>
+                            </tr>
+                            <tr>
+                                <td><strong>🥑 Gordura</strong> (9 kcal/g)</td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" id="fat-pct" class="macro-input" value="30" min="0" max="100" onchange="recalculateMacros()">
+                                        <span>%</span>
+                                    </div>
+                                </td>
+                                <td id="fat-grams">--</td>
+                                <td id="fat-cal">--</td>
+                            </tr>
+                            <tr style="background: var(--light); font-weight: 600;">
+                                <td>Total</td>
+                                <td id="total-pct">100%</td>
+                                <td>--</td>
+                                <td id="total-cal">--</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="macro-warning" class="warning-box hidden">
+                    ⚠️ Os percentuais devem somar 100%! Atual: <span id="total-warning">0</span>%
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="goNext('resultados')">← Voltar</button>
+                <button class="btn btn-primary" onclick="goToMealNames()">Próximo →</button>
+            </div>
+        </section>
+        
+        <!-- TAB: NOMES DAS REFEIÇÕES -->
+        <section id="tab-refeicoes" class="tab-content hidden">
+            <div class="card">
+                <h2 class="card-title">🍽️ Nome das Refeições</h2>
+                <p style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 1rem;">
+                    Dê nomes às suas refeições. Se deixar em branco, será usado um nome genérico.
+                </p>
+                <div class="meal-name-input" id="meal-names-container"></div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="goNext('macros')">← Voltar</button>
+                <button class="btn btn-primary" onclick="generateMealPlan()">Gerar Dieta →</button>
+            </div>
+        </section>
+        
+        <!-- TAB: CARDÁPIO -->
+        <section id="tab-cardapio" class="tab-content hidden">
+            <div class="card">
+                <h2 class="card-title">📋 Cardápio Sugerido</h2>
+                <div class="info-box">
+                    ℹ️ Cardápio personalizado conforme tipo de refeição e macros configurados.
+                </div>
+                <div id="meal-plans"></div>
+                <div id="distribution-summary" class="success-box hidden" style="margin-top: 1rem;">
+                    <strong>📊 Distribuição:</strong> <span id="dist-summary-text"></span>
+                </div>
+            </div>
+            
+            <div class="pdf-actions">
+                <button class="btn btn-success" onclick="downloadPDF()">📥 Baixar PDF</button>
+            </div>
+        </section>
+    </div>
+    
+    <script>
+        const { jsPDF } = window.jspdf;
+        
+        // Alimentos por tipo de refeição
+        const mealFoods = {
+            cafeManha: [
+                { name: 'Leite', cal: 61, p: 3.2, c: 4.8, g: 3.3 },
+                { name: 'Pão francês', cal: 265, p: 9, c: 50, g: 3 },
+                { name: 'Café', cal: 2, p: 0, c: 0, g: 0 },
+                { name: 'Banana', cal: 89, p: 1.1, c: 23, g: 0.3 },
+                { name: 'Maçã', cal: 52, p: 0.3, c: 14, g: 0.2 },
+                { name: 'Manteiga', cal: 717, p: 1, c: 0, g: 81 },
+                { name: 'Queijo mussarela', cal: 280, p: 22, c: 3, g: 20 },
+                { name: 'Iogurte natural', cal: 59, p: 3.5, c: 4.5, g: 3 },
+                { name: 'Aveia', cal: 68, p: 2.4, c: 12, g: 1.4 },
+                { name: 'Ovo inteiro', cal: 155, p: 13, c: 1.1, g: 11 },
+                { name: 'Suco de laranja', cal: 45, p: 0.7, c: 10, g: 0.2 }
+            ],
+            cafeTarde: [
+                { name: 'Fruta varie', cal: 50, p: 0.5, c: 12, g: 0.2 },
+                { name: 'Biscoito', cal: 444, p: 9, c: 73, g: 11 },
+                { name: 'Iogurte', cal: 59, p: 3.5, c: 4.5, g: 3 },
+                { name: 'Castanha', cal: 553, p: 18, c: 30, g: 44 },
+                { name: 'Nozes', cal: 654, p: 15, c: 14, g: 65 },
+                { name: 'Mel', cal: 304, p: 0.3, c: 82, g: 0 },
+                { name: 'Pão', cal: 265, p: 9, c: 50, g: 3 },
+                { name: 'Queijo cottage', cal: 98, p: 11, c: 3, g: 4 }
+            ],
+            almoco: [
+                { name: 'Arroz branco', cal: 130, p: 2.7, c: 28, g: 0.3 },
+                { name: 'Feijão', cal: 127, p: 8.8, c: 22.3, g: 0.5 },
+                { name: 'Peito de frango', cal: 165, p: 31, c: 0, g: 3.6 },
+                { name: 'Carne moída', cal: 176, p: 22, c: 0, g: 9 },
+                { name: 'Alface', cal: 15, p: 1.4, c: 2.9, g: 0.2 },
+                { name: 'Tomate', cal: 18, p: 0.9, c: 4, g: 0.2 },
+                { name: 'Cenoura', cal: 41, p: 0.9, c: 10, g: 0.2 },
+                { name: 'Brócolis', cal: 34, p: 2.8, c: 7, g: 0.4 },
+                { name: 'Batata doce', cal: 86, p: 1.6, c: 20, g: 0.1 },
+                { name: 'Azeite', cal: 884, p: 0, c: 0, g: 100 }
+            ],
+            janta: [
+                { name: 'Arroz branco', cal: 130, p: 2.7, c: 28, g: 0.3 },
+                { name: 'Feijão', cal: 127, p: 8.8, c: 22.3, g: 0.5 },
+                { name: 'Tilápia', cal: 96, p: 20, c: 0, g: 2 },
+                { name: 'Peito de frango', cal: 165, p: 31, c: 0, g: 3.6 },
+                { name: 'Alface', cal: 15, p: 1.4, c: 2.9, g: 0.2 },
+                { name: 'Tomate', cal: 18, p: 0.9, c: 4, g: 0.2 },
+                { name: 'Couve', cal: 23, p: 2, c: 5, g: 0.3 },
+                { name: 'Espinafre', cal: 23, p: 2.9, c: 3.6, g: 0.4 },
+                { name: 'Legumes', cal: 30, p: 1, c: 6, g: 0.3 }
+            ],
+            lanche: [
+                { name: 'Fruta', cal: 50, p: 0.5, c: 12, g: 0.2 },
+                { name: 'Iogurte', cal: 59, p: 3.5, c: 4.5, g: 3 },
+                { name: 'Biscoito', cal: 444, p: 9, c: 73, g: 11 },
+                { name: 'Castanha', cal: 553, p: 18, c: 30, g: 44 },
+                { name: 'Pão', cal: 265, p: 9, c: 50, g: 3 }
+            ]
+        };
+        
+        const substitutes = {
+            'leite': ['Leite desnatado', 'Iogurte', 'Leite de coco'],
+            'pão': ['Pão integral', 'Torrada', 'Biscoito'],
+            'frango': ['Coxa de frango', 'Filé de peixe', 'Tilápia'],
+            'carne': ['Patinho', 'Alcatra', 'Contrafilé'],
+            'arroz': ['Arroz integral', 'Polenta', 'Aveia'],
+            'feijão': ['Feijão preto', 'Lentilha', 'Ervilha'],
+            'alface': ['Couve', 'Espinafre', 'Rúcula'],
+            'fruta': ['Banana', 'Maçã', 'Laranja', 'Mamão']
+        };
+        
+        let data = null;
+        let mealNames = [];
+        let mealCalories = [];
+        
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => showTab(tab.dataset.tab));
+        });
+        
+        function showTab(target) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('[data-tab="' + target + '"]').classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById('tab-' + target).classList.remove('hidden');
+        }
+        
+        function goNext(tab) { showTab(tab); }
+        
+        function validateDistribution() {
+            const lunch = parseFloat(document.getElementById('lunch_pct').value) || 0;
+            const dinner = parseFloat(document.getElementById('dinner_pct').value) || 0;
+            const total = lunch + dinner;
+            const warn = document.getElementById('dist-warning');
+            document.getElementById('main-total').textContent = total;
+            warn.classList.toggle('hidden', total === 100);
+            return total === 100;
+        }
+        
+        document.getElementById('lunch_pct').addEventListener('change', validateDistribution);
+        document.getElementById('dinner_pct').addEventListener('change', validateDistribution);
+        
+        function calculate() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const age = parseInt(document.getElementById('age').value);
+            const gender = document.getElementById('gender').value;
+            const activity = parseFloat(document.getElementById('activity').value);
+            const weightLoss = parseFloat(document.getElementById('weight_loss').value) || 0;
+            const mealCount = parseInt(document.getElementById('meal_count').value);
+            
+            if (!weight || !height || !age) {
+                alert('⚠️ Preencha peso, altura e idade!');
+                return;
+            }
+            
+            if (mealCount < 2 || mealCount > 10) {
+                alert('⚠️ Refeições devem ser entre 2 e 10!');
+                return;
+            }
+            
+            if (!validateDistribution()) {
+                alert('⚠️ Almoço + Janta devem somar 100%!');
+                showTab('distribuicao');
+                return;
+            }
+            
+            let tmb;
+            if (gender === 'M') {
+                tmb = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+            } else {
+                tmb = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+            }
+            
+            const get = tmb * activity;
+            const deficit = (weightLoss * 7700) / 30;
+            const recommended = Math.max(1200, get - deficit);
+            
+            data = { tmb, get, deficit, recommended, weightLoss, weight };
+            
+            document.getElementById('tmb-result').textContent = Math.round(tmb);
+            document.getElementById('get-result').textContent = Math.round(get);
+            document.getElementById('deficit-result').textContent = Math.round(deficit);
+            document.getElementById('recommended-result').textContent = Math.round(recommended);
+            document.getElementById('weight-loss-result').textContent = weightLoss.toFixed(1);
+            
+            recalculateMacros();
+            showTab('resultados');
+        }
+        
+        function recalculateMacros() {
+            if (!data) return;
+            
+            const proteinPct = parseFloat(document.getElementById('protein-pct').value) || 30;
+            const carbPct = parseFloat(document.getElementById('carb-pct').value) || 40;
+            const fatPct = parseFloat(document.getElementById('fat-pct').value) || 30;
+            
+            const totalPcts = proteinPct + carbPct + fatPct;
+            document.getElementById('total-pct').textContent = totalPcts + '%';
+            
+            if (totalPcts !== 100) {
+                document.getElementById('macro-warning').classList.remove('hidden');
+                document.getElementById('total-warning').textContent = totalPcts;
+            } else {
+                document.getElementById('macro-warning').classList.add('hidden');
+            }
+            
+            const cal = data.recommended;
+            const proteinCal = cal * (proteinPct / 100);
+            const carbCal = cal * (carbPct / 100);
+            const fatCal = cal * (fatPct / 100);
+            
+            const proteinGrams = proteinCal / 4;
+            const carbGrams = carbCal / 4;
+            const fatGrams = fatCal / 9;
+            
+            document.getElementById('protein-grams').textContent = Math.round(proteinGrams) + 'g';
+            document.getElementById('protein-cal').textContent = Math.round(proteinCal) + ' kcal';
+            document.getElementById('carb-grams').textContent = Math.round(carbGrams) + 'g';
+            document.getElementById('carb-cal').textContent = Math.round(carbCal) + ' kcal';
+            document.getElementById('fat-grams').textContent = Math.round(fatGrams) + 'g';
+            document.getElementById('fat-cal').textContent = Math.round(fatCal) + ' kcal';
+            document.getElementById('total-cal').textContent = Math.round(proteinCal + carbCal + fatCal) + ' kcal';
+        }
+        
+        function updateMealNames() {
+            const count = parseInt(document.getElementById('meal_count').value) || 3;
+            const container = document.getElementById('meal-names-container');
+            
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                const defaultName = i === 0 ? 'Café da manhã' : 
+                               i === 1 ? 'Almoço' : 
+                               i === count - 1 ? 'Janta' : 
+                               `Lanche ${i}`;
+                const id = `meal-name-${i}`;
+                html += `
+                <div class="meal-name-field">
+                    <label>Refeição ${i + 1}</label>
+                    <input type="text" id="${id}" placeholder="${defaultName}">
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+        
+        function goToMealNames() {
+            const proteinPct = parseFloat(document.getElementById('protein-pct').value);
+            const carbPct = parseFloat(document.getElementById('carb-pct').value);
+            const fatPct = parseFloat(document.getElementById('fat-pct').value);
+            
+            if (proteinPct + carbPct + fatPct !== 100) {
+                alert('⚠️ Os percentuais de macros devem somar 100%!');
+                return;
+            }
+            
+            recalculateMacros();
+            updateMealNames();
+            showTab('refeicoes');
+        }
+        
+        function generateMealPlan() {
+            if (!data) return;
+            
+            const mealCount = parseInt(document.getElementById('meal_count').value);
+            const mainMealsPct = parseFloat(document.getElementById('main_meals_pct').value) || 50;
+            const lunchPct = parseFloat(document.getElementById('lunch_pct').value) || 45;
+            const dinnerPct = parseFloat(document.getElementById('dinner_pct').value) || 55;
+            const dislikes = document.getElementById('dislikes').value.toLowerCase();
+            
+            const totalCal = data.recommended;
+            const mainCal = totalCal * (mainMealsPct / 100);
+            const lunchCal = mainCal * (lunchPct / 100);
+            const dinnerCal = mainCal * (dinnerPct / 100);
+            const othersTotal = totalCal - mainCal;
+            
+            // Calorias para cada refeição
+            mealCalories = [];
+            mealNames = [];
+            
+            for (let i = 0; i < mealCount; i++) {
+                const inputVal = document.getElementById(`meal-name-${i}`).value.trim();
+                mealNames.push(inputVal || getDefaultMealName(i, mealCount));
+            }
+            
+            // Calcular distribuição
+            let remainingCal = totalCal;
+            let mainMealIndices = [];
+            let otherIndices = [];
+            
+            for (let i = 0; i < mealCount; i++) {
+                const name = mealNames[i].toLowerCase();
+                if (name.includes('almoço')) {
+                    mealCalories[i] = lunchCal;
+                    mainMealIndices.push(i);
+                } else if (name.includes('janta')) {
+                    mealCalories[i] = dinnerCal;
+                    mainMealIndices.push(i);
+                } else {
+                    otherIndices.push(i);
+                }
+            }
+            
+            // Distribuir outras refeições restante
+            let remaining = othersTotal;
+            for (let idx of otherIndices) {
+                if (mealNames[idx].toLowerCase().includes('café da manhã') || mealNames[idx].toLowerCase().includes('café matinal')) {
+                    mealCalories[idx] = remaining * (otherIndices.length > 1 ? 0.4 : remaining);
+                    remaining -= mealCalories[idx];
+                } else {
+                    mealCalories[idx] = remaining / (remaining > 0 ? otherIndices.length : 1);
+                }
+            }
+            
+            // Ajustar para確保 total corret
+            const actualTotal = mealCalories.reduce((a, b) => a + (b || 0), 0);
+            if (actualTotal !== totalCal) {
+                const diff = totalCal - actualTotal;
+                if (otherIndices.length > 0) {
+                    mealCalories[otherIndices[0]] += diff;
+                }
+            }
+            
+            // Calcular distribuição de macros - proteína preferencialmente para refeições maiores
+            const targetP = parseFloat(document.getElementById('protein-grams').textContent);
+            const targetC = parseFloat(document.getElementById('carb-grams').textContent);
+            const targetF = parseFloat(document.getElementById('fat-grams').textContent);
+            
+            // Distribuição de proteína: 35% almoço, 35% janta, 15% café manhã, 15% outros
+            let pPerMeal = [], cPerMeal = [], fPerMeal = [];
+            let mainP = targetP * 0.70; // 70% para almoço + janta
+            let othersP = targetP * 0.30; // 30% para outros
+            
+            for (let i = 0; i < mealCount; i++) {
+                const name = mealNames[i].toLowerCase();
+                let pRatio, cRatio, fRatio;
+                
+                if (name.includes('almoço')) {
+                    pRatio = 0.35;
+                    cRatio = 0.40;
+                    fRatio = 0.35;
+                } else if (name.includes('janta')) {
+                    pRatio = 0.35;
+                    cRatio = 0.35;
+                    fRatio = 0.35;
+                } else if (name.includes('café')) {
+                    pRatio = 0.15;
+                    cRatio = 0.15;
+                    fRatio = 0.15;
+                } else {
+                    pRatio = 0.15 / Math.max(1, otherIndices.length);
+                    cRatio = 0.10 / Math.max(1, otherIndices.length);
+                    fRatio = 0.15 / Math.max(1, otherIndices.length);
+                }
+                
+                pPerMeal[i] = targetP * pRatio;
+                cPerMeal[i] = targetC * cRatio;
+                fPerMeal[i] = targetF * fRatio;
+            }
+            
+            // Ajustar para確保 total certo
+            const actualP = pPerMeal.reduce((a, b) => a + b, 0);
+            if (Math.abs(actualP - targetP) > 1) {
+                const diff = targetP - actualP;
+                if (mainMealIndices.length > 0) {
+                    pPerMeal[mainMealIndices[0]] += diff;
+                }
+            }
+            
+            // Gerar cardápio
+            const container = document.getElementById('meal-plans');
+            let html = '';
+            
+            for (let i = 0; i < mealCount; i++) {
+                const cal = mealCalories[i] || totalCal / mealCount;
+                const foodType = getFoodType(mealNames[i]);
+                
+                const foods = getFoodsForMeal(foodType, cal, pPerMeal[i], cPerMeal[i], fPerMeal[i], dislikes);
+                
+                html += `
+                <div class="meal-card">
+                    <div class="meal-title">
+                        <span>${mealNames[i]}</span>
+                        <span class="meal-calories">${Math.round(cal)} kcal</span>
+                    </div>
+                    ${foods.map(f => `
+                    <div class="food-item">
+                        <span>${f.name} (${f.qty}g)</span>
+                        <span>${Math.round(f.cal)} kcal</span>
+                    </div>`).join('')}
+                    <div class="substitutes">
+                        <strong>Alternativas:</strong> ${getSubstitutes(foods).join(', ')}
+                    </div>
+                </div>`;
+            }
+            
+            html += `
+            <div class="success-box">
+                <strong>📊 Resumo:</strong> ${Math.round(totalCal)} kcal | 
+                P: ${Math.round(targetP)}g | C: ${Math.round(targetC)}g | G: ${Math.round(targetF)}g
+            </div>`;
+            
+            container.innerHTML = html;
+            
+            document.getElementById('dist-summary-text').textContent = 
+                `Almoço: ${Math.round(lunchCal)} kcal, Janta: ${Math.round(dinnerCal)} kcal, Outras: ${Math.round(othersTotal)} kcal`;
+            document.getElementById('distribution-summary').classList.remove('hidden');
+            
+            showTab('cardapio');
+        }
+        
+        function getDefaultMealName(index, total) {
+            if (index === 0) return 'Café da manhã';
+            if (index === 1) return 'Almoço';
+            if (index === total - 1) return 'Janta';
+            return `Lanche ${index}`;
+        }
+        
+        function getFoodType(name) {
+            const n = name.toLowerCase();
+            if (n.includes('café') || n.includes('cafe')) return 'cafeManha';
+            if (n.includes('almoço')) return 'almoco';
+            if (n.includes('janta') || n.includes(' ceia')) return 'janta';
+            return 'lanche';
+        }
+        
+        function getFoodsForMeal(foodType, targetCal, targetP, targetC, targetF, dislikes) {
+            const foods = [];
+            const available = mealFoods[foodType] || mealFoods.lanche;
+            
+            // Função para calcular quantidade baseada nos macros alvo
+            const calcQty = (macroPer100g, targetMacro, maxQty) => {
+                if (macroPer100g <= 0) return 0;
+                return Math.min(maxQty, Math.round(targetMacro * 100 / macroPer100g));
+            };
+            
+            // Primeiro: proteína (maior prioridade para refeição grande)
+            const proteinPriority = targetP > 10;
+            if (proteinPriority) {
+                for (let f of available) {
+                    if (foods.length >= 2) break;
+                    if (!dislikes.includes(f.name.toLowerCase()) && f.p > 5) {
+                        const qty = calcQty(f.p, targetP, 120);
+                        if (qty > 20) {
+                            foods.push({ name: f.name, qty, cal: f.cal * qty / 100, p: f.p * qty / 100, c: f.c * qty / 100, g: f.g * qty / 100 });
+                        }
+                    }
+                }
+            }
+            
+            // Segundo: carboidrato
+            if (targetC > 5) {
+                for (let f of available) {
+                    if (foods.length >= 4) break;
+                    const exists = foods.find(fd => fd.name === f.name);
+                    if (!exists && !dislikes.includes(f.name.toLowerCase()) && f.c > 10) {
+                        const qty = calcQty(f.c, targetC, 150);
+                        if (qty > 20) {
+                            foods.push({ name: f.name, qty, cal: f.cal * qty / 100, p: f.p * qty / 100, c: f.c * qty / 100, g: f.g * qty / 100 });
+                        }
+                    }
+                }
+            }
+            
+            // Terceiro: completar com gordura/produz outros alimentos
+            for (let f of available) {
+                if (foods.length >= 5) break;
+                const exists = foods.find(fd => fd.name === f.name);
+                if (!exists && !dislikes.includes(f.name.toLowerCase())) {
+                    const remaining = targetCal - foods.reduce((s, fd) => s + fd.cal, 0);
+                    if (remaining > 30) {
+                        const qty = calcQty(f.cal, remaining, 80);
+                        if (qty > 10) {
+                            foods.push({ name: f.name, qty, cal: f.cal * qty / 100, p: f.p * qty / 100, c: f.c * qty / 100, g: f.g * qty / 100 });
+                        }
+                    }
+                }
+            }
+            
+            return foods.slice(0, 4);
+        }
+        
+        function getSubstitutes(foods) {
+            const allSubs = [];
+            for (let f of foods) {
+                for (let cat in substitutes) {
+                    if (f.name.toLowerCase().includes(cat)) {
+                        allSubs.push(...substitutes[cat].filter(s => s !== f.name));
+                    }
+                }
+            }
+            return [...new Set(allSubs)].slice(0, 4);
+        }
+        
+        function downloadPDF() {
+            if (!data) { alert('⚠️ Calcule primeiro!'); return; }
+            
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            let y = 20;
+            
+            doc.setFontSize(18);
+            doc.setTextColor(45, 106, 79);
+            doc.text('NutriCalc - Plano Nutricional', pageWidth/2, y, { align: 'center' });
+            y += 15;
+            
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text('Resultados', 20, y);
+            y += 10;
+            
+            doc.setFontSize(11);
+            doc.text(`TMB: ${Math.round(data.tmb)} kcal/dia | GET: ${Math.round(data.get)} kcal/dia | Déficit: ${Math.round(data.deficit)} kcal/dia`, 20, y);
+            y += 7;
+            doc.setTextColor(45, 106, 79);
+            doc.text(`Calorias Diárias: ${Math.round(data.recommended)} kcal/dia | Meta: ${data.weightLoss} kg/mês`, 20, y);
+            y += 15;
+            
+            doc.setTextColor(0);
+            doc.setFontSize(14);
+            doc.text('Macronutrientes', 20, y);
+            y += 10;
+            
+            doc.setFontSize(11);
+            const pG = document.getElementById('protein-grams').textContent;
+            const cG = document.getElementById('carb-grams').textContent;
+            const fG = document.getElementById('fat-grams').textContent;
+            doc.text(`Proteína: ${pG} | Carboidrato: ${cG} | Gordura: ${fG}`, 20, y);
+            y += 15;
+            
+            doc.setFontSize(14);
+            doc.text('Cardápio do Dia', 20, y);
+            y += 10;
+            
+            const container = document.getElementById('meal-plans');
+            const cards = container.querySelectorAll('.meal-card');
+            
+            cards.forEach((card) => {
+                if (y > 260) { doc.addPage(); y = 20; }
+                
+                const title = card.querySelector('.meal-title');
+                const titleText = title.querySelector('span:first-child').textContent;
+                const calText = title.querySelector('.meal-calories').textContent;
+                
+                doc.setFontSize(12);
+                doc.setTextColor(45, 106, 79);
+                doc.text(`${titleText} - ${calText}`, 20, y);
+                y += 7;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(0);
+                const items = card.querySelectorAll('.food-item');
+                items.forEach(item => {
+                    if (y > 280) { doc.addPage(); y = 20; }
+                    const text = item.firstElementChild.textContent + ' - ' + item.lastElementChild.textContent;
+                    doc.text(text, 25, y);
+                    y += 5;
+                });
+                y += 5;
+            });
+            
+            doc.setFontSize(8);
+            doc.setTextColor(128);
+            doc.text('Gerado por NutriCalc', pageWidth/2, 290, { align: 'center' });
+            
+            doc.save('NutriCalc_Dieta.pdf');
+        }
+        
+        // Inicializar
+        updateMealNames();
+    </script>
+</body>
+</html>
